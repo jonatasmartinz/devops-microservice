@@ -9,3 +9,11 @@ artifact_repo_name = "devops-repo"
 
 node_count   = 2
 machine_type = "e2-medium"
+
+# Rede (VPC/Subnet)
+network_name = "devops-vpc"
+subnet_name  = "devops-subnet"
+
+subnet_cidr              = "10.10.0.0/16"
+pods_secondary_range     = "10.20.0.0/16"
+services_secondary_range = "10.30.0.0/20"

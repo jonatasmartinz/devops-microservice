@@ -1,4 +1,29 @@
 ############################
+# Network (VPC + Subnet)
+############################
+resource "google_compute_network" "vpc" {
+  name                    = var.network_name
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = var.subnet_name
+  region        = var.region
+  network       = google_compute_network.vpc.id
+  ip_cidr_range = var.subnet_cidr
+
+  secondary_ip_range {
+    range_name    = "gke-pods"
+    ip_cidr_range = var.pods_secondary_range
+  }
+
+  secondary_ip_range {
+    range_name    = "gke-services"
+    ip_cidr_range = var.services_secondary_range
+  }
+}
+
+############################
 # Service Account (CI/CD)
 ############################
 resource "google_service_account" "cicd" {
@@ -22,7 +47,7 @@ resource "google_project_iam_member" "container_developer" {
 }
 
 ############################
-# Artifact Registry
+# Artifact Registry (Docker)
 ############################
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
@@ -46,8 +71,17 @@ resource "google_container_cluster" "gke" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  networking_mode = "VPC_NATIVE"
+  networking_mode     = "VPC_NATIVE"
   deletion_protection = false
+
+  # Use rede criada via IaC
+  network    = google_compute_network.vpc.id
+  subnetwork = google_compute_subnetwork.subnet.id
+
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "gke-pods"
+    services_secondary_range_name = "gke-services"
+  }
 
   logging_service    = "logging.googleapis.com/kubernetes"
   monitoring_service = "monitoring.googleapis.com/kubernetes"
@@ -58,6 +92,7 @@ resource "google_container_cluster" "gke" {
     channel = "REGULAR"
   }
 
+  # Workload Identity (evita chaves estáticas)
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
@@ -68,7 +103,7 @@ resource "google_container_cluster" "gke" {
 ############################
 resource "google_container_node_pool" "primary_nodes" {
   name     = "${var.cluster_name}-np"
-  cluster = google_container_cluster.gke.name
+  cluster  = google_container_cluster.gke.name
   location = var.zone
 
   node_count = var.node_count
@@ -76,10 +111,12 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = var.machine_type
 
+    # Evita metadata legacy
     metadata = {
       disable-legacy-endpoints = "true"
     }
 
+    # Shielded VM features
     shielded_instance_config {
       enable_secure_boot          = true
       enable_integrity_monitoring = true
