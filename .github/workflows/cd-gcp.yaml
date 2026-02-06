@@ -1,0 +1,91 @@
+name: CD - GCP (Terraform Apply + Deploy to GKE)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: us-central1
+  ZONE: us-central1-a
+  CLUSTER_NAME: devops-cluster
+
+  REPO: devops-repo
+  APP_NAME: hello-ms
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---- Auth GCP via OIDC (sem keys) ----
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_ID_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ---- Terraform (Infra) ----
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+
+      - name: Terraform init / validate / apply
+        working-directory: infra
+        run: |
+          terraform init -input=false
+          terraform validate
+          terraform apply -auto-approve -input=false
+
+      # ---- Docker Build & Push ----
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev -q
+
+      - name: Build and Push Image
+        run: |
+          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${APP_NAME}:${IMAGE_TAG}"
+
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
+
+          echo "IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      # ---- Get GKE credentials ----
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials \
+            ${CLUSTER_NAME} \
+            --zone ${ZONE} \
+            --project "${{ secrets.GCP_PROJECT_ID }}"
+
+      # ---- Deploy to GKE using kustomize ----
+      - name: Deploy manifests (kustomize overlay)
+        run: |
+          # Ajuste dinâmico do PROJECT_ID
+          sed -i "s/REPLACE_PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g" \
+            k8s/overlays/gcp/kustomization.yaml
+
+          # Atualiza a tag da imagem
+          sed -i "s/newTag: \".*\"/newTag: \"${IMAGE_TAG}\"/g" \
+            k8s/overlays/gcp/kustomization.yaml
+
+          kubectl apply -k k8s/overlays/gcp
+
+      # ---- Smoke test ----
+      - name: Rollout status and ingress check
+        run: |
+          kubectl -n microservice rollout status deploy/hello-ms --timeout=180s
+          kubectl -n microservice get ingress hello-ms

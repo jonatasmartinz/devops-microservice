@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: hello-ms
-          image: hello-ms:local # vamos trocar pelo registry depois (ACR/Artifact Registry)
-          imagePullPolicy: IfNotPresent
+          image: hello-ms:local
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
@@ -28,25 +28,18 @@ spec:
               value: "hello-ms"
             - name: APP_VERSION
               value: "0.1.0"
-
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 2
-            failureThreshold: 3
-
           readinessProbe:
             httpGet:
               path: /ready
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
-            timeoutSeconds: 2
-            failureThreshold: 3
-
           resources:
             requests:
               cpu: "50m"

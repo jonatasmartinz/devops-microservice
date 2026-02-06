@@ -1,0 +1,7 @@
+resources:
+  - ../../base
+
+images:
+  - name: hello-ms:local
+    newName: us-central1-docker.pkg.dev/REPLACE_PROJECT_ID/devops-repo/hello-ms
+    newTag: "0.1.0"

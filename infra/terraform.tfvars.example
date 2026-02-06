@@ -1,4 +1,5 @@
-project_id = "devops-atendas"
+# Troque pelo Project ID do seu GCP
+project_id = "my-gcp-project-id"
 
 region = "us-central1"
 zone   = "us-central1-a"
