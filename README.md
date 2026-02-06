@@ -2,7 +2,8 @@
 # DevOps Microservice Challenge – GCP
 
 Este repositório contém a implementação completa de um desafio técnico para DevOps Pleno, 
-cobrindo todas as etapas esperadas de um fluxo moderno de DevOps: aplicação, containerização, Kubernetes, Infraestrutura como Código (IaC) e CI/CD, com foco em boas práticas e segurança (DevSecOps).
+cobrindo todas as etapas esperadas de um fluxo moderno de DevOps: aplicação, containerização, 
+Kubernetes, Infraestrutura como Código (IaC) e CI/CD, com foco em boas práticas e segurança (DevSecOps).
 
 O projeto foi desenhado para que qualquer pessoa consiga executá-lo no próprio projeto GCP, 
 utilizando suas próprias credenciais, sem exposição de segredos.
