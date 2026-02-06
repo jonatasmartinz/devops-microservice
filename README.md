@@ -3,7 +3,7 @@
 
 Este repositório contém a implementação completa de um **desafio técnico para DevOps Pleno**, cobrindo todas as etapas esperadas de um fluxo moderno de DevOps: aplicação, containerização, Kubernetes, Infraestrutura como Código (IaC) e CI/CD, com foco em **boas práticas e segurança (DevSecOps)**.
 
-O projeto foi desenhado para que **qualquer qualquer pessoa consiga executá-lo no próprio projeto GCP**, utilizando suas próprias credenciais, sem exposição de segredos.
+O projeto foi desenhado para que **qualquer pessoa consiga executá-lo no próprio projeto GCP**, utilizando suas próprias credenciais, sem exposição de segredos.
 
 ---
 
@@ -26,7 +26,7 @@ O projeto foi desenhado para que **qualquer qualquer pessoa consiga executá-lo 
 
 .
 ├── app/                       # Código da aplicação
-├── infra/                     # Terraform (GKE, Artifact Registry, IAM)
+├── infra/                     # Terraform (VPC, GKE, Artifact Registry, IAM)
 ├── k8s/
 │   ├── base/                  # Manifests Kubernetes base
 │   │   ├── deployment.yaml
@@ -37,9 +37,11 @@ O projeto foi desenhado para que **qualquer qualquer pessoa consiga executá-lo 
 │   └── overlays/
 │       └── gcp/               # Overlay específico para GCP
 │           └── kustomization.yaml
+├── scripts/
+│   └── smoke_test.sh          # Smoke test HTTP (200)
 ├── .github/workflows/
 │   ├── ci.yaml                # CI (App + Terraform + Security scans)
-│   └── cd-gcp.yaml            # CD manual (Terraform apply + Deploy no GKE)
+│   └── cd-gcp.yaml            # CD automático + manual (Terraform + Deploy GKE)
 ├── Dockerfile
 ├── requirements.txt
 ├── .dockerignore
@@ -103,6 +105,7 @@ kubectl apply -k k8s/overlays/gcp
 
 O diretório `infra/` contém o código Terraform responsável por provisionar:
 
+* VPC e Subnet dedicadas (VPC-native)
 * GKE (Standard, com hardening básico)
 * Artifact Registry (Docker)
 * Service Account para CI/CD
@@ -141,19 +144,20 @@ Executado automaticamente em `push` e `pull_request`:
 
 ### CD – `cd-gcp.yaml`
 
-Executado manualmente (`workflow_dispatch`):
+Executado automaticamente em **push na branch `main`** e também manualmente (`workflow_dispatch`):
 
 * Terraform apply
 * Build e push da imagem no Artifact Registry
 * Deploy no GKE via Kustomize
-* Verificação de rollout e Ingress
+* Verificação de rollout
+* **Smoke test automatizado (HTTP 200)**
 
 ---
 
-### Pré-requisitos
+## Pré-requisitos
 
 * Projeto GCP com billing habilitado
-* Permissões para criar GKE, Artifact Registry e IAM
+* Permissões para criar VPC, GKE, Artifact Registry e IAM
 * GitHub Actions habilitado
 
 ### Secrets necessários no GitHub
@@ -167,24 +171,5 @@ Configurar em **Settings → Actions → Secrets**:
 | `GCP_SERVICE_ACCOUNT`      | Service Account usado pelo OIDC |
 
 > Nenhuma chave JSON é utilizada. A autenticação é feita via **OIDC**, conforme boas práticas de segurança.
-
-### Fluxo sugerido
-
-1. Clonar o repositório
-2. Ajustar `infra/terraform.tfvars`
-3. Executar Terraform localmente **ou**
-4. Rodar manualmente o workflow **CD - GCP** no GitHub Actions
-
----
-
-## DevSecOps e Boas Práticas Aplicadas
-
-* Separação clara entre aplicação, manifests e infraestrutura
-* Infraestrutura totalmente versionada (IaC)
-* IAM com menor privilégio possível
-* Autenticação sem segredos estáticos
-* Scans de segurança automatizados
-* Health checks e resource limits no Kubernetes
-* Pipelines seguros, auditáveis e controlados
 
 ---
