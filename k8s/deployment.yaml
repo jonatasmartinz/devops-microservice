@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-ms
+  namespace: microservice
+  labels:
+    app: hello-ms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-ms
+  template:
+    metadata:
+      labels:
+        app: hello-ms
+    spec:
+      containers:
+        - name: hello-ms
+          image: hello-ms:local # vamos trocar pelo registry depois (ACR/Artifact Registry)
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: APP_NAME
+              value: "hello-ms"
+            - name: APP_VERSION
+              value: "0.1.0"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
