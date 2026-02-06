@@ -1,7 +1,7 @@
 ```md
 # DevOps Microservice Challenge – GCP
 
-Este repositório contém a implementação completa de um **desafio técnico para DevOps Pleno**, cobrindo todas as etapas esperadas de um fluxo moderno de DevOps: aplicação, containerização, Kubernetes, Infraestrutura como Código (IaC) e CI/CD, com foco em **boas práticas e segurança (DevSecOps)**.
+Este repositório contém a implementação completa de um desafio técnico para DevOps Pleno, cobrindo todas as etapas esperadas de um fluxo moderno de DevOps: aplicação, containerização, Kubernetes, Infraestrutura como Código (IaC) e CI/CD, com foco em **boas práticas e segurança (DevSecOps)**.
 
 O projeto foi desenhado para que **qualquer pessoa consiga executá-lo no próprio projeto GCP**, utilizando suas próprias credenciais, sem exposição de segredos.
 
@@ -9,42 +9,46 @@ O projeto foi desenhado para que **qualquer pessoa consiga executá-lo no própr
 
 ## Visão Geral da Arquitetura
 
-- **Aplicação**: Python + FastAPI (stateless)
-- **Containerização**: Docker
-- **Orquestração**: Kubernetes (GKE)
-- **Manifests Kubernetes**: Kustomize (base + overlay)
-- **Infraestrutura como Código**: Terraform
-- **CI/CD**: GitHub Actions
-- **Cloud Provider**: Google Cloud Platform (GCP)
-- **Autenticação**: OIDC / Workload Identity (sem chaves estáticas)
+- Aplicação: Python + FastAPI (stateless)
+- Containerização: Docker
+- Orquestração: Kubernetes (GKE)
+- Manifests Kubernetes: Kustomize (base + overlay)
+- Infraestrutura como Código: Terraform
+- CI/CD: GitHub Actions
+- Cloud Provider: Google Cloud Platform (GCP)
+- Autenticação: OIDC / Workload Identity (sem chaves estáticas)
 
 ---
 
 ## Estrutura do Repositório
-
-```
-
 .
-├── app/                       # Código da aplicação
-├── infra/                     # Terraform (VPC, GKE, Artifact Registry, IAM)
+├── app/ # Código da aplicação
+│ └── main.py
+├── infra/ # Terraform (VPC, GKE, Artifact Registry, IAM)
+│ ├── backend.tf
+│ ├── main.tf
+│ ├── variables.tf
+│ ├── outputs.tf
+│ └── terraform.tfvars.example
 ├── k8s/
-│   ├── base/                  # Manifests Kubernetes base
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   │   ├── ingress.yaml
-│   │   ├── namespace.yaml
-│   │   └── kustomization.yaml
-│   └── overlays/
-│       └── gcp/               # Overlay específico para GCP
-│           └── kustomization.yaml
+│ ├── base/ # Manifests Kubernetes base
+│ │ ├── deployment.yaml
+│ │ ├── service.yaml
+│ │ ├── ingress.yaml
+│ │ ├── namespace.yaml
+│ │ └── kustomization.yaml
+│ └── overlays/
+│ └── gcp/ # Overlay específico para GCP
+│ └── kustomization.yaml
 ├── scripts/
-│   └── smoke_test.sh          # Smoke test HTTP (200)
+│ └── smoke_test.sh # Smoke test HTTP (200)
 ├── .github/workflows/
-│   ├── ci.yaml                # CI (App + Terraform + Security scans)
-│   └── cd-gcp.yaml            # CD automático + manual (Terraform + Deploy GKE)
+│ ├── ci.yaml # CI (App + Terraform + Security scans)
+│ └── cd-gcp.yaml # CD automático + manual (Terraform + Deploy GKE)
 ├── Dockerfile
 ├── requirements.txt
 ├── .dockerignore
+├── .gitignore
 └── README.md
 
 ````
